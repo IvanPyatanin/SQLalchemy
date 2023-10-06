@@ -2,6 +2,8 @@ import sqlalchemy
 import sqlalchemy as sq
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
+
+
 Base = declarative_base()
 
 class Publisher(Base):
@@ -53,7 +55,7 @@ class Sale(Base):
 
     id = sq.Column(sq.Integer, primary_key=True)
     price = sq.Column(sq.Integer, nullable=False)
-    data_sale = sq.Column(sq.Integer(), nullable=False)
+    data_sale = sq.Column(sq.String,nullable=False)
     count = sq.Column(sq.Integer, nullable=False)
     stock_id = sq.Column(sq.Integer, sq.ForeignKey("Stock.id"), nullable=False)
 
@@ -98,19 +100,17 @@ Stock_5 = Stock(book=Book_5, shop=Shop_3, count=1)
 Stock_6 = Stock(book=Book_6, shop=Shop_3, count=1)
 Stock_7 = Stock(book=Book_1, shop=Shop_3, count=1)
 
-Sale_1 = Sale(price=100, data_sale=29_01_2022, count=1, stock=Stock_1)
-Sale_2 = Sale(price=200, data_sale=12_06_2021, count=1, stock=Stock_2)
-Sale_3 = Sale(price=1000, data_sale=9_01_2023, count=1, stock=Stock_3)
-Sale_4 = Sale(price=500, data_sale=30_10_2010, count=1, stock=Stock_4)
-Sale_5 = Sale(price=750, data_sale=5_10_2000, count=1, stock=Stock_5)
-Sale_6 = Sale(price=150, data_sale=29_12_2002, count=1, stock=Stock_6)
-Sale_7 = Sale(price=1500, data_sale=29_04_2020, count=1, stock=Stock_7)
-Sale_8 = Sale(price=1010, data_sale=29_03_2022, count=1, stock=Stock_1)
-Sale_9 = Sale(price=1111, data_sale=1_01_2022, count=1, stock=Stock_2)
-Sale_10 = Sale(price=1055, data_sale=7_11_2022, count=1, stock=Stock_3)
-Sale_11 = Sale(price=1001, data_sale=16_05_2020, count=1, stock=Stock_4)
-
-
+Sale_1 = Sale(price=100, data_sale='29-01-2022', count=1, stock=Stock_1)
+Sale_2 = Sale(price=200, data_sale='12-06-2021', count=1, stock=Stock_2)
+Sale_3 = Sale(price=1000, data_sale='09-01-2023', count=1, stock=Stock_3)
+Sale_4 = Sale(price=500, data_sale='30-10-2010', count=1, stock=Stock_4)
+Sale_5 = Sale(price=750, data_sale='05-10-2000', count=1, stock=Stock_5)
+Sale_6 = Sale(price=150, data_sale='29-12-2002', count=1, stock=Stock_6)
+Sale_7 = Sale(price=1500, data_sale='29-04-2020', count=1, stock=Stock_7)
+Sale_8 = Sale(price=1010, data_sale='29-03-2022', count=1, stock=Stock_1)
+Sale_9 = Sale(price=1111, data_sale='01-01-2022', count=1, stock=Stock_2)
+Sale_10 = Sale(price=1055, data_sale='07-11-2022', count=1, stock=Stock_3)
+Sale_11 = Sale(price=1001, data_sale='16-05-2020', count=1, stock=Stock_4)
 
 
 session.add_all([Publisher_1, Publisher_2])
@@ -120,19 +120,25 @@ session.add_all([Stock_1, Stock_2, Stock_3, Stock_4, Stock_5, Stock_6, Stock_7])
 session.add_all([Sale_1, Sale_2, Sale_3, Sale_4, Sale_5, Sale_6, Sale_7, Sale_8, Sale_9, Sale_10, Sale_11])
 session.commit()
 
-names = input('Введите фамилию: ')
+
+def get_shop(names):
+    q = session.query(Book.title, Shop.name, Sale.price, Sale.data_sale).select_from(Shop).\
+        join(Stock, Shop.id == Stock.shop_id).\
+        join(Book, Book.id == Stock.book_id).\
+        join(Publisher, Publisher.id == Book.publisher_id).\
+        join(Sale, Stock.id == Sale.stock_id)
+
+    if names.isdigit():
+        res = q.filter(Publisher.id == f'{names}').all()
+    else:
+        res = q.filter(Publisher.name.like(f'{names}')).all()
+    for name, shop, sale, data in res:
+        print(f"{name: <20} | {shop: <10} | {sale: <5} | {data}")
 
 
-res = session.query(Stock, Book, Sale).outerjoin(Book, full=True).outerjoin(Sale, full=True)
-res1 = session.query(Publisher).filter(Publisher.name.like(f'{names}'))
 
-for q in res1:
-    r = q.id
-    for stock, book, sale in res:
-        if book.publisher_id == r:
-            print(f'{book.title}| {stock.shop.name}| {sale.price}| {sale.data_sale}')
-        else:
-            continue
-
+if __name__ == '__main__':
+    names = input('Введите фамилию или id: ')
+    get_shop(names)
 
 session.close()
